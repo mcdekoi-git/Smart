@@ -15,12 +15,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Hochladen zu Strato per SFTP (nur Unterordner "deployed")
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          username: ${{ secrets.STRATO_USERNAME }}
           server: ${{ secrets.STRATO_SERVER }}
-          port: 22
+          username: ${{ secrets.STRATO_USERNAME }}
           password: ${{ secrets.STRATO_PASSWORD }}
-          local_path: './site/*'
-          remote_path: '/dach/deployed'
+          protocol: sftp
+          port: 22
+          local-dir: ./site/
+          server-dir: /dach/deployed/
           
