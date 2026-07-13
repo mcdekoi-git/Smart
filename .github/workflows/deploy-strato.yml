@@ -1,0 +1,26 @@
+name: Deploy zu Strato
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'site/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Hochladen zu Strato per SFTP (nur Unterordner "deployed")
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.STRATO_USERNAME }}
+          server: ${{ secrets.STRATO_SERVER }}
+          port: 22
+          password: ${{ secrets.STRATO_PASSWORD }}
+          local_path: './site/*'
+          remote_path: '/dach/deployed'
+          
