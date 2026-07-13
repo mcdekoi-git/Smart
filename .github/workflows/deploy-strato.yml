@@ -14,6 +14,9 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
+      - name: Inhalt von site pruefen
+        run: ls -la ./site/
+
       - name: Hochladen zu Strato per SFTP (nur Unterordner "deployed")
         uses: Dylan700/sftp-upload-action@latest
         with:
@@ -22,5 +25,4 @@ jobs:
           password: ${{ secrets.STRATO_PASSWORD }}
           port: 22
           uploads: |
-            ./site/ => ./deployed/
-            
+            ./site/ => /dach/deployed/
