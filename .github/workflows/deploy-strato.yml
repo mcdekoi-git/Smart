@@ -14,15 +14,12 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
-      - name: Inhalt von site pruefen
-        run: ls -la ./site/
-
       - name: Hochladen zu Strato per SFTP (nur Unterordner "deployed")
-        uses: Dylan700/sftp-upload-action@latest
+        uses: wangyucode/sftp-upload-action@v3
         with:
-          server: ${{ secrets.STRATO_SERVER }}
+          host: ${{ secrets.STRATO_SERVER }}
           username: ${{ secrets.STRATO_USERNAME }}
           password: ${{ secrets.STRATO_PASSWORD }}
-          port: 22
-          uploads: |
-            ./site/ => /dach/deployed/
+          localDir: 'site'
+          remoteDir: '/dach/deployed'
+          concurrency: 4
