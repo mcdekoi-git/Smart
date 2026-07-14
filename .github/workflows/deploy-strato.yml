@@ -21,5 +21,5 @@ jobs:
           username: ${{ secrets.STRATO_USERNAME }}
           password: ${{ secrets.STRATO_PASSWORD }}
           localDir: 'site'
-          remoteDir: '/dach/deployed'
+          remoteDir: '/deployed'
           concurrency: 4
