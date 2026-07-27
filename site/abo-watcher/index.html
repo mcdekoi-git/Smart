@@ -1,1 +1,962 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privater Abo-Wächter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ─────────────────────────────────── */
+    :root {
+      --bg:           #F8F6F2;
+      --surface:      #FFFFFF;
+      --dark:         #1A2744;
+      --dark-2:       #243558;
+      --primary:      #1E7B6B;
+      --primary-lt:   #E8F5F3;
+      --warn:         #E5830A;
+      --warn-lt:      #FEF3E8;
+      --danger:       #C0392B;
+      --danger-lt:    #FDECEA;
+      --ok:           #27AE60;
+      --ok-lt:        #E9F7EF;
+      --muted:        #6B7280;
+      --border:       #E4DFD1;
+      --radius:       16px;
+      --shadow:       0 2px 8px rgba(26,39,68,.08), 0 8px 24px rgba(26,39,68,.04);
+      --shadow-lg:    0 4px 16px rgba(26,39,68,.12), 0 16px 48px rgba(26,39,68,.08);
+    }
 
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── AUTH ───────────────────────────────────── */
+    #auth {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(145deg, #F8F6F2 0%, #E8F5F3 100%);
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 48px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-brand {
+      font-family: 'Sora', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 4px;
+    }
+    .auth-brand em { color: var(--primary); font-style: normal; }
+
+    .auth-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      border-radius: 9px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab.on {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    .field { margin-bottom: 16px; }
+    .label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .input, .select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: var(--dark);
+      background: var(--surface);
+      outline: none;
+      transition: border-color .2s;
+      appearance: none;
+    }
+    .input:focus, .select:focus { border-color: var(--primary); }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; margin-top: 8px; }
+    .btn-primary:hover { background: #196557; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .auth-msg {
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .auth-msg.err { background: var(--danger-lt); color: var(--danger); }
+    .auth-msg.info { background: var(--primary-lt); color: var(--primary); }
+
+    /* ── APP SHELL ─────────────────────────────── */
+    #app { display: none; }
+
+    .header {
+      background: var(--dark);
+      height: 64px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      font-family: 'Sora', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .header-brand em { color: #4DB6A8; font-style: normal; }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .btn-upgrade-h {
+      padding: 8px 18px;
+      background: linear-gradient(135deg, var(--warn), #F0A030);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      animation: glow 2.5s ease-in-out infinite;
+      transition: transform .2s;
+    }
+    .btn-upgrade-h:hover { transform: translateY(-1px); }
+    @keyframes glow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(229,131,10,.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(229,131,10,0); }
+    }
+
+    .btn-logout {
+      padding: 8px 14px;
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.8);
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.18); }
+
+    /* ── MAIN ───────────────────────────────────── */
+    .main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--dark);
+      line-height: 1;
+    }
+    .stat-val.warn  { color: var(--warn); }
+    .stat-val.danger { color: var(--danger); }
+
+    /* Upgrade banner */
+    .upgrade-banner {
+      background: linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .upgrade-banner h3 {
+      font-family: 'Sora', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .up-benefits { display: flex; gap: 18px; flex-wrap: wrap; }
+    .up-benefit {
+      font-size: 13px;
+      color: rgba(255,255,255,.7);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .up-benefit::before { content: "✓"; color: #4DB6A8; font-weight: 700; }
+
+    .btn-upgrade-m {
+      padding: 13px 26px;
+      background: linear-gradient(135deg, var(--warn), #F0A030);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s;
+      box-shadow: 0 4px 16px rgba(229,131,10,.3);
+    }
+    .btn-upgrade-m:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(229,131,10,.4); }
+
+    /* Limit bar */
+    .limit-bar {
+      background: var(--warn-lt);
+      border: 1px solid var(--warn);
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: var(--warn);
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* Section */
+    .sec-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .sec-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .btn-add {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-add:hover { background: #196557; transform: translateY(-1px); }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+
+    /* Sub card */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeUp .35s ease forwards;
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .card-name {
+      font-family: 'Sora', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .card-cat { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      white-space: nowrap;
+    }
+    .b-ok     { background: var(--ok-lt);     color: var(--ok); }
+    .b-warn   { background: var(--warn-lt);   color: var(--warn); }
+    .b-danger { background: var(--danger-lt); color: var(--danger); }
+    .b-trial  { background: #EEF2FF;          color: #4F46E5; }
+
+    .card-amount {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .card-cycle { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+
+    .card-foot {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .date-lbl { font-size: 10px; color: var(--muted); margin-bottom: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .date-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+
+    .card-actions { display: flex; gap: 6px; }
+    .icon-btn {
+      width: 32px; height: 32px;
+      border: none; border-radius: 8px;
+      cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+      background: var(--bg); color: var(--muted);
+    }
+    .icon-btn.edit:hover  { background: var(--primary-lt); color: var(--primary); }
+    .icon-btn.del:hover   { background: var(--danger-lt);  color: var(--danger); }
+
+    /* Empty */
+    .empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 72px 24px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 52px; margin-bottom: 16px; }
+    .empty-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+    }
+    .empty p { font-size: 14px; }
+
+    /* ── MODAL ──────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(26,39,68,.5);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; z-index: 200;
+      backdrop-filter: blur(3px);
+    }
+    .modal {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 36px;
+      width: 100%; max-width: 460px;
+      box-shadow: var(--shadow-lg);
+      animation: modalIn .22s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(.96) translateY(6px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+    .modal-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 19px; font-weight: 700;
+      margin-bottom: 24px;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .toggle-row {
+      display: flex; align-items: center; gap: 10px;
+      margin: 10px 0; cursor: pointer;
+    }
+    .toggle-row input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    .toggle-row label { font-size: 14px; font-weight: 500; cursor: pointer; }
+
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-cancel {
+      flex: 1; padding: 12px;
+      background: var(--bg); border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; color: var(--dark); transition: background .2s;
+    }
+    .btn-cancel:hover { background: var(--border); }
+    .btn-save {
+      flex: 2; padding: 12px;
+      background: var(--primary); color: #fff; border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-save:hover { background: #196557; }
+
+    /* ── TOAST ──────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--dark); color: #fff;
+      padding: 14px 20px; border-radius: 12px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: var(--shadow-lg); z-index: 9999;
+      opacity: 0; transform: translateY(60px);
+      transition: all .3s;
+      pointer-events: none;
+    }
+    .toast.on   { opacity: 1; transform: translateY(0); }
+    .toast.ok   { border-left: 4px solid var(--ok); }
+    .toast.err  { border-left: 4px solid var(--danger); }
+
+    /* ── LOADER ─────────────────────────────────── */
+    .loader {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 64px; color: var(--muted); font-size: 14px;
+      grid-column: 1/-1;
+    }
+    .spin {
+      width: 20px; height: 20px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+    @media (max-width: 640px) {
+      .stats         { grid-template-columns: 1fr; }
+      .upgrade-banner { flex-direction: column; }
+      .row2          { grid-template-columns: 1fr; }
+      .auth-card     { padding: 32px 24px; }
+      .modal         { padding: 24px; }
+      .header        { padding: 0 16px; }
+      .main          { padding: 24px 16px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ AUTH ════════════════════════════════════ -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="auth-brand">🛡️ Privater <em>Abo-Wächter</em></div>
+    <p class="auth-sub">Nie wieder Abo-Fallen — verwalte Abonnements &amp; Trials auf einen Blick.</p>
+
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('login')">Anmelden</button>
+      <button class="tab"    onclick="switchTab('signup')">Registrieren</button>
+    </div>
+
+    <div id="auth-msg" class="auth-msg"></div>
+
+    <!-- Login -->
+    <div id="f-login">
+      <div class="field"><label class="label">E-Mail</label>
+        <input class="input" id="l-email" type="email" placeholder="deine@email.de" /></div>
+      <div class="field"><label class="label">Passwort</label>
+        <input class="input" id="l-pw" type="password" placeholder="Passwort"
+          onkeydown="if(event.key==='Enter')login()" /></div>
+      <button class="btn btn-primary" id="l-btn" onclick="login()">Anmelden</button>
+    </div>
+
+    <!-- Signup -->
+    <div id="f-signup" style="display:none">
+      <div class="field"><label class="label">E-Mail</label>
+        <input class="input" id="s-email" type="email" placeholder="deine@email.de" /></div>
+      <div class="field"><label class="label">Passwort <small style="font-weight:400;color:var(--muted)">(min. 6 Zeichen)</small></label>
+        <input class="input" id="s-pw" type="password" placeholder="Sicheres Passwort"
+          onkeydown="if(event.key==='Enter')signup()" /></div>
+      <button class="btn btn-primary" id="s-btn" onclick="signup()">Konto erstellen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ══════════════════════════════════════ -->
+<div id="app">
+  <header class="header">
+    <div class="header-brand">🛡️ Privater <em>Abo-Wächter</em></div>
+    <div class="header-right">
+      <button class="btn-upgrade-h" id="h-upgrade" onclick="upgradeClick()">Premium freischalten 🔒</button>
+      <button class="btn-logout"    onclick="logout()">Abmelden</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Monatliche Kosten</div>
+        <div class="stat-val" id="s-monthly">€ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Aktive Trials</div>
+        <div class="stat-val" id="s-trials">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nächste Abbuchung</div>
+        <div class="stat-val" id="s-next">–</div>
+      </div>
+    </div>
+
+    <!-- Upgrade Banner -->
+    <div class="upgrade-banner" id="up-banner">
+      <div>
+        <h3>Nie wieder Abo-Fallen 🚫</h3>
+        <div class="up-benefits">
+          <span class="up-benefit">Unbegrenzte Abonnements</span>
+          <span class="up-benefit">Monatliche Ausgaben-Analyse</span>
+          <span class="up-benefit">CSV-Export</span>
+        </div>
+      </div>
+      <button class="btn-upgrade-m" onclick="upgradeClick()">Jetzt upgraden – €&thinsp;4,99&thinsp;/&thinsp;Monat</button>
+    </div>
+
+    <!-- Limit notice -->
+    <div class="limit-bar" id="limit-bar">
+      ⚠️ Du hast alle 5 kostenlosen Einträge erreicht — upgrade auf Premium für unbegrenzte Abos.
+    </div>
+
+    <!-- Section -->
+    <div class="sec-head">
+      <h2 class="sec-title">Meine Abonnements</h2>
+      <button class="btn-add" onclick="openModal()">＋ Hinzufügen</button>
+    </div>
+    <div class="grid" id="grid">
+      <div class="loader"><div class="spin"></div> Lade Abonnements …</div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ MODAL ═════════════════════════════════════ -->
+<div class="overlay" id="modal-wrap" style="display:none" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-ttl">Abo hinzufügen</div>
+    <input type="hidden" id="edit-id" />
+
+    <div class="field">
+      <label class="label">Name *</label>
+      <input class="input" id="f-name" placeholder="z. B. Netflix, Spotify, Adobe …" />
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="label">Betrag (€) *</label>
+        <input class="input" id="f-amount" type="number" step="0.01" min="0" placeholder="9.99" />
+      </div>
+      <div class="field">
+        <label class="label">Zyklus</label>
+        <select class="select" id="f-cycle">
+          <option value="monthly">Monatlich</option>
+          <option value="yearly">Jährlich</option>
+          <option value="weekly">Wöchentlich</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">Nächste Abbuchung *</label>
+      <input class="input" id="f-date" type="date" />
+    </div>
+
+    <div class="field">
+      <label class="label">Kategorie</label>
+      <select class="select" id="f-cat">
+        <option value="">— keine —</option>
+        <option>Streaming</option>
+        <option>Software</option>
+        <option>Fitness</option>
+        <option>News &amp; Medien</option>
+        <option>Shopping</option>
+        <option>Cloud &amp; Speicher</option>
+        <option>Sonstiges</option>
+      </select>
+    </div>
+
+    <div class="toggle-row">
+      <input type="checkbox" id="f-trial" onchange="trialToggle()" />
+      <label for="f-trial">Kostenloser Testzeitraum (Trial)</label>
+    </div>
+    <div class="field" id="trial-grp" style="display:none">
+      <label class="label">Trial endet am</label>
+      <input class="input" id="f-trial-end" type="date" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-save"   onclick="save()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ SCRIPT ════════════════════════════════════ -->
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ── CONFIG ── replace both values after Supabase setup ── */
+const SB_URL  = 'YOUR_SUPABASE_URL';
+const SB_KEY  = 'YOUR_SUPABASE_ANON_KEY';
+
+const FREE_LIMIT = 5;
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let user = null;
+let plan = 'free';
+let subs = [];
+
+/* ── BOOT ── */
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) { user = session.user; await initApp(); }
+  else { show('auth'); }
+
+  sb.auth.onAuthStateChange(async (evt, session) => {
+    if (evt === 'SIGNED_IN')  { user = session.user; await initApp(); }
+    if (evt === 'SIGNED_OUT') { user = null; subs = []; show('auth'); }
+  });
+})();
+
+async function initApp() {
+  await loadPlan();
+  show('app');
+  applyPlanUI();
+  await loadSubs();
+}
+
+/* ── AUTH ── */
+function show(id) {
+  document.getElementById('auth').style.display = id === 'auth' ? 'flex' : 'none';
+  document.getElementById('app').style.display  = id === 'app'  ? 'block': 'none';
+}
+
+function switchTab(t) {
+  ['login','signup'].forEach(k => {
+    document.getElementById(`f-${k}`).style.display = k === t ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('on', (t === 'login' && i === 0) || (t === 'signup' && i === 1)));
+  authMsg('');
+}
+
+async function login() {
+  const btn = id('l-btn');
+  btn.disabled = true; btn.textContent = 'Anmelden …';
+  const { error } = await sb.auth.signInWithPassword({
+    email: val('l-email'), password: val('l-pw')
+  });
+  if (error) authMsg(error.message, 'err');
+  btn.disabled = false; btn.textContent = 'Anmelden';
+}
+
+async function signup() {
+  const btn = id('s-btn');
+  btn.disabled = true; btn.textContent = 'Konto erstellen …';
+  const { error } = await sb.auth.signUp({
+    email: val('s-email'), password: val('s-pw')
+  });
+  if (error) authMsg(error.message, 'err');
+  else authMsg('✓ Bitte bestätige deine E-Mail-Adresse und melde dich dann an.', 'info');
+  btn.disabled = false; btn.textContent = 'Konto erstellen';
+}
+
+async function logout() { await sb.auth.signOut(); }
+
+function authMsg(msg, type = '') {
+  const el = id('auth-msg');
+  el.textContent = msg;
+  el.className = 'auth-msg' + (type ? ` ${type}` : '');
+  el.style.display = msg ? 'block' : 'none';
+}
+
+/* ── PLAN ── */
+async function loadPlan() {
+  const { data } = await sb.from('profiles').select('plan').eq('id', user.id).single();
+  plan = data?.plan || 'free';
+}
+
+function applyPlanUI() {
+  const isPremium = plan === 'premium';
+  id('up-banner').style.display = isPremium ? 'none' : 'flex';
+  id('h-upgrade').style.display = isPremium ? 'none' : 'block';
+}
+
+function upgradeClick() {
+  /* Stripe integration folgt in Phase 2 */
+  toast('Stripe-Integration folgt in Kürze — Coming Soon! 🚀', 'ok');
+}
+
+/* ── SUBSCRIPTIONS ── */
+async function loadSubs() {
+  id('grid').innerHTML = '<div class="loader"><div class="spin"></div> Lade Abonnements …</div>';
+  const { data, error } = await sb
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .order('next_billing_date', { ascending: true });
+
+  if (error) { toast('Fehler beim Laden.', 'err'); return; }
+  subs = data || [];
+  render();
+  updateStats();
+}
+
+function render() {
+  const limitReached = plan === 'free' && subs.length >= FREE_LIMIT;
+  id('limit-bar').style.display = limitReached ? 'block' : 'none';
+
+  if (!subs.length) {
+    id('grid').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🛡️</div>
+        <div class="empty-title">Noch keine Abonnements</div>
+        <p>Füge dein erstes Abo oder deinen ersten Trial hinzu.</p>
+      </div>`;
+    return;
+  }
+
+  id('grid').innerHTML = subs.map((s, i) => {
+    const st = status(s);
+    const cycle = { monthly: '/ Monat', yearly: '/ Jahr', weekly: '/ Woche' }[s.billing_cycle] || '';
+    const dateKey  = s.is_trial ? s.trial_end_date : s.next_billing_date;
+    const dateLbl  = s.is_trial ? 'Trial endet' : 'Nächste Abbuchung';
+    return `
+    <div class="card" style="animation-delay:${i * .05}s">
+      <div class="card-top">
+        <div>
+          <div class="card-name">${esc(s.name)}</div>
+          ${s.category ? `<div class="card-cat">${esc(s.category)}</div>` : ''}
+        </div>
+        <span class="badge ${st.cls}">${st.lbl}</span>
+      </div>
+      <div class="card-amount">€&nbsp;${fmt(s.amount)}</div>
+      <div class="card-cycle">${cycle}</div>
+      <div class="card-foot">
+        <div>
+          <div class="date-lbl">${dateLbl}</div>
+          <div class="date-val">${fmtDate(dateKey)}</div>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn edit" onclick="openModal('${s.id}')" title="Bearbeiten">✏️</button>
+          <button class="icon-btn del"  onclick="del('${s.id}')" title="Löschen">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function status(s) {
+  const today = new Date();
+  const target = new Date(s.is_trial ? s.trial_end_date : s.next_billing_date);
+  const days = Math.ceil((target - today) / 864e5);
+  if (s.is_trial) {
+    if (days <= 1) return { cls: 'b-danger', lbl: 'Läuft ab!' };
+    if (days <= 7) return { cls: 'b-warn',   lbl: `${days}d` };
+    return { cls: 'b-trial', lbl: 'Trial' };
+  }
+  if (days <= 1) return { cls: 'b-danger', lbl: 'Morgen!' };
+  if (days <= 7) return { cls: 'b-warn',   lbl: `${days}d` };
+  return { cls: 'b-ok', lbl: 'Aktiv' };
+}
+
+function updateStats() {
+  const monthly = subs.reduce((sum, s) => {
+    const a = parseFloat(s.amount);
+    if (s.billing_cycle === 'monthly') return sum + a;
+    if (s.billing_cycle === 'yearly')  return sum + a / 12;
+    if (s.billing_cycle === 'weekly')  return sum + a * 4.33;
+    return sum;
+  }, 0);
+  id('s-monthly').textContent = '€ ' + monthly.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const trials = subs.filter(s => s.is_trial).length;
+  const te = id('s-trials');
+  te.textContent = trials;
+  te.className = 'stat-val' + (trials ? ' warn' : '');
+
+  const next = subs.filter(s => !s.is_trial).sort((a, b) =>
+    new Date(a.next_billing_date) - new Date(b.next_billing_date))[0];
+  const ne = id('s-next');
+  if (next) {
+    const days = Math.ceil((new Date(next.next_billing_date) - new Date()) / 864e5);
+    ne.textContent = fmtDate(next.next_billing_date);
+    ne.className = 'stat-val' + (days <= 3 ? ' danger' : days <= 7 ? ' warn' : '');
+  } else { ne.textContent = '–'; ne.className = 'stat-val'; }
+}
+
+/* ── MODAL ── */
+function openModal(editId = null) {
+  if (!editId && plan === 'free' && subs.length >= FREE_LIMIT) {
+    toast('Free-Limit (5 Abos) erreicht — bitte upgraden.', 'err');
+    return;
+  }
+  id('edit-id').value = editId || '';
+  id('modal-ttl').textContent = editId ? 'Abo bearbeiten' : 'Abo hinzufügen';
+
+  if (editId) {
+    const s = subs.find(x => x.id === editId);
+    if (s) {
+      setVal('f-name',      s.name);
+      setVal('f-amount',    s.amount);
+      setVal('f-cycle',     s.billing_cycle);
+      setVal('f-date',      s.next_billing_date);
+      setVal('f-cat',       s.category || '');
+      id('f-trial').checked = s.is_trial;
+      setVal('f-trial-end', s.trial_end_date || '');
+      trialToggle();
+    }
+  } else {
+    ['f-name','f-amount','f-trial-end'].forEach(k => setVal(k, ''));
+    setVal('f-cycle', 'monthly'); setVal('f-cat', ''); setVal('f-date', '');
+    id('f-trial').checked = false; trialToggle();
+  }
+  id('modal-wrap').style.display = 'flex';
+}
+
+function closeModal() { id('modal-wrap').style.display = 'none'; }
+function overlayClick(e) { if (e.target === id('modal-wrap')) closeModal(); }
+function trialToggle() {
+  id('trial-grp').style.display = id('f-trial').checked ? 'block' : 'none';
+}
+
+async function save() {
+  const name  = val('f-name').trim();
+  const amount = parseFloat(val('f-amount'));
+  const billing_cycle   = val('f-cycle');
+  const next_billing_date = val('f-date');
+  const category    = val('f-cat') || null;
+  const is_trial    = id('f-trial').checked;
+  const trial_end_date = val('f-trial-end') || null;
+  const editId = val('edit-id');
+
+  if (!name || isNaN(amount) || !next_billing_date) {
+    toast('Bitte alle Pflichtfelder (*) ausfüllen.', 'err'); return;
+  }
+  if (is_trial && !trial_end_date) {
+    toast('Bitte das Trial-Enddatum angeben.', 'err'); return;
+  }
+
+  const row = { name, amount, billing_cycle, next_billing_date, category, is_trial, trial_end_date, user_id: user.id, is_active: true };
+  const { error } = editId
+    ? await sb.from('subscriptions').update(row).eq('id', editId)
+    : await sb.from('subscriptions').insert(row);
+
+  if (error) { toast('Fehler beim Speichern.', 'err'); return; }
+  closeModal();
+  toast(editId ? 'Abo aktualisiert ✓' : 'Abo hinzugefügt ✓', 'ok');
+  await loadSubs();
+}
+
+async function del(delId) {
+  if (!confirm('Dieses Abonnement wirklich löschen?')) return;
+  const { error } = await sb.from('subscriptions').update({ is_active: false }).eq('id', delId);
+  if (error) { toast('Fehler beim Löschen.', 'err'); return; }
+  toast('Abo gelöscht.', 'ok');
+  await loadSubs();
+}
+
+/* ── HELPERS ── */
+const id     = k => document.getElementById(k);
+const val    = k => id(k).value;
+const setVal = (k, v) => { id(k).value = v; };
+const esc    = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt    = n => parseFloat(n).toLocaleString('de-DE', { minimumFractionDigits: 2 });
+const fmtDate= d => d ? new Date(d).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : '–';
+
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const el = id('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} on`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = `toast ${type}`; }, 3200);
+}
+</script>
+</body>
+</html>
